@@ -340,7 +340,8 @@ $(function() {
             url : base_url + "/jobinfo/nextTriggerTime",
             data : {
                 "scheduleType" : row.scheduleType,
-				"scheduleConf" : row.scheduleConf
+				"scheduleConf" : row.scheduleConf,
+				"timeZoneId" : row.timeZoneId
             },
             dataType : "json",
             success : function(data){
@@ -553,6 +554,7 @@ $(function() {
 		} else if (row.scheduleType == 'FIX_DELAY') {
 			$("#updateModal .form input[name='schedule_conf_FIX_DELAY']").val( row.scheduleConf );
 		}
+		$('#updateModal .form select[name=timeZoneId] option[value="'+ row.timeZoneId +'"]').prop('selected', true);
 
 		// 》init scheduleType
 		$("#updateModal .form select[name=scheduleType]").change();

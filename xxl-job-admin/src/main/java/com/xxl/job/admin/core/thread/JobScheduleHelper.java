@@ -6,6 +6,7 @@ import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.scheduler.MisfireStrategyEnum;
 import com.xxl.job.admin.core.scheduler.ScheduleTypeEnum;
 import com.xxl.job.admin.core.trigger.TriggerTypeEnum;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -358,8 +359,12 @@ public class JobScheduleHelper {
     public static Date generateNextValidTime(XxlJobInfo jobInfo, Date fromTime) throws Exception {
         ScheduleTypeEnum scheduleTypeEnum = ScheduleTypeEnum.match(jobInfo.getScheduleType(), null);
         if (ScheduleTypeEnum.CRON == scheduleTypeEnum) {
-            Date nextValidTime = new CronExpression(jobInfo.getScheduleConf()).getNextValidTimeAfter(fromTime);
-            return nextValidTime;
+            CronExpression cronExpression = new CronExpression(jobInfo.getScheduleConf());
+            if(Strings.isNotBlank(jobInfo.getTimeZoneId())){
+                cronExpression.setTimeZone(TimeZone.getTimeZone(jobInfo.getTimeZoneId()));
+            }
+
+            return cronExpression.getNextValidTimeAfter(fromTime);
         } else if (ScheduleTypeEnum.FIX_RATE == scheduleTypeEnum /*|| ScheduleTypeEnum.FIX_DELAY == scheduleTypeEnum*/) {
             return new Date(fromTime.getTime() + Integer.valueOf(jobInfo.getScheduleConf())*1000 );
         }

@@ -42,6 +42,8 @@ public class XxlJobInfo {
 	private long triggerLastTime;	// 上次调度时间
 	private long triggerNextTime;	// 下次调度时间
 
+	private String timeZoneId; // 时区Id
+
 
 	public int getId() {
 		return id;
@@ -233,5 +235,13 @@ public class XxlJobInfo {
 
 	public void setTriggerNextTime(long triggerNextTime) {
 		this.triggerNextTime = triggerNextTime;
+	}
+
+	public String getTimeZoneId() {
+		return timeZoneId;
+	}
+
+	public void setTimeZoneId(String timeZoneId) {
+		this.timeZoneId = timeZoneId;
 	}
 }
