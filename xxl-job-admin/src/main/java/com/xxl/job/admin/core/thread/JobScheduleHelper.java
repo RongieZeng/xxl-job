@@ -1,6 +1,7 @@
 package com.xxl.job.admin.core.thread;
 
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
+import com.xxl.job.admin.core.conf.model.NextValidTimeInfo;
 import com.xxl.job.admin.core.cron.CronExpression;
 import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.scheduler.MisfireStrategyEnum;
@@ -34,7 +35,7 @@ public class JobScheduleHelper {
     private Thread ringThread;
     private volatile boolean scheduleThreadToStop = false;
     private volatile boolean ringThreadToStop = false;
-    private volatile static Map<Integer, List<Integer>> ringData = new ConcurrentHashMap<>();
+    private volatile static Map<Integer, List<Map<Integer, String>>> ringData = new ConcurrentHashMap<>();
 
     public void start(){
 
@@ -82,6 +83,7 @@ public class JobScheduleHelper {
                         if (scheduleList!=null && scheduleList.size()>0) {
                             // 2、push time-ring
                             for (XxlJobInfo jobInfo: scheduleList) {
+                                String triggerNextTimeZoneId = jobInfo.getTriggerNextTimeZoneId();
 
                                 // time-ring jump
                                 if (nowTime > jobInfo.getTriggerNextTime() + PRE_READ_MS) {
@@ -92,7 +94,7 @@ public class JobScheduleHelper {
                                     MisfireStrategyEnum misfireStrategyEnum = MisfireStrategyEnum.match(jobInfo.getMisfireStrategy(), MisfireStrategyEnum.DO_NOTHING);
                                     if (MisfireStrategyEnum.FIRE_ONCE_NOW == misfireStrategyEnum) {
                                         // FIRE_ONCE_NOW 》 trigger
-                                        JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.MISFIRE, -1, null, null, null);
+                                        JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.MISFIRE, -1, null, null, null, jobInfo.getTriggerNextTimeZoneId());
                                         logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = " + jobInfo.getId() );
                                     }
 
@@ -103,7 +105,7 @@ public class JobScheduleHelper {
                                     // 2.2、trigger-expire < 5s：direct-trigger && make next-trigger-time
 
                                     // 1、trigger
-                                    JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.CRON, -1, null, null, null);
+                                    JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.CRON, -1, null, null, null, triggerNextTimeZoneId);
                                     logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = " + jobInfo.getId() );
 
                                     // 2、fresh next
@@ -116,7 +118,7 @@ public class JobScheduleHelper {
                                         int ringSecond = (int)((jobInfo.getTriggerNextTime()/1000)%60);
 
                                         // 2、push time ring
-                                        pushTimeRing(ringSecond, jobInfo.getId());
+                                        pushTimeRing(ringSecond, jobInfo.getId(), triggerNextTimeZoneId);
 
                                         // 3、fresh next
                                         refreshNextValidTime(jobInfo, new Date(jobInfo.getTriggerNextTime()));
@@ -130,7 +132,7 @@ public class JobScheduleHelper {
                                     int ringSecond = (int)((jobInfo.getTriggerNextTime()/1000)%60);
 
                                     // 2、push time ring
-                                    pushTimeRing(ringSecond, jobInfo.getId());
+                                    pushTimeRing(ringSecond, jobInfo.getId(), triggerNextTimeZoneId);
 
                                     // 3、fresh next
                                     refreshNextValidTime(jobInfo, new Date(jobInfo.getTriggerNextTime()));
@@ -236,10 +238,10 @@ public class JobScheduleHelper {
 
                     try {
                         // second data
-                        List<Integer> ringItemData = new ArrayList<>();
+                        List<Map<Integer, String>> ringItemData = new ArrayList<>();
                         int nowSecond = Calendar.getInstance().get(Calendar.SECOND);   // 避免处理耗时太长，跨过刻度，向前校验一个刻度；
                         for (int i = 0; i < 2; i++) {
-                            List<Integer> tmpData = ringData.remove( (nowSecond+60-i)%60 );
+                            List<Map<Integer, String>> tmpData = ringData.remove( (nowSecond+60-i)%60 );
                             if (tmpData != null) {
                                 ringItemData.addAll(tmpData);
                             }
@@ -249,9 +251,10 @@ public class JobScheduleHelper {
                         logger.debug(">>>>>>>>>>> xxl-job, time-ring beat : " + nowSecond + " = " + Arrays.asList(ringItemData) );
                         if (ringItemData.size() > 0) {
                             // do trigger
-                            for (int jobId: ringItemData) {
+                            for (Map<Integer, String> job: ringItemData) {
+                                Map.Entry<Integer, String> jobEntry = job.entrySet().stream().findFirst().get();
                                 // do trigger
-                                JobTriggerPoolHelper.trigger(jobId, TriggerTypeEnum.CRON, -1, null, null, null);
+                                JobTriggerPoolHelper.trigger(jobEntry.getKey(), TriggerTypeEnum.CRON, -1, null, null, null, jobEntry.getValue());
                             }
                             // clear
                             ringItemData.clear();
@@ -271,27 +274,32 @@ public class JobScheduleHelper {
     }
 
     private void refreshNextValidTime(XxlJobInfo jobInfo, Date fromTime) throws Exception {
-        Date nextValidTime = generateNextValidTime(jobInfo, fromTime);
-        if (nextValidTime != null) {
+        NextValidTimeInfo nextValidTimeInfo = generateNextValidTime(jobInfo, fromTime);
+        if (Objects.nonNull(nextValidTimeInfo) && Objects.nonNull(nextValidTimeInfo.getNextValidTime())) {
             jobInfo.setTriggerLastTime(jobInfo.getTriggerNextTime());
-            jobInfo.setTriggerNextTime(nextValidTime.getTime());
+            jobInfo.setTriggerNextTime(nextValidTimeInfo.getNextValidTime().getTime());
+            jobInfo.setTriggerNextTimeZoneId(nextValidTimeInfo.getNextValidTimeZoneId());
         } else {
             jobInfo.setTriggerStatus(0);
             jobInfo.setTriggerLastTime(0);
             jobInfo.setTriggerNextTime(0);
+            jobInfo.setTriggerNextTimeZoneId(null);
             logger.warn(">>>>>>>>>>> xxl-job, refreshNextValidTime fail for job: jobId={}, scheduleType={}, scheduleConf={}",
                     jobInfo.getId(), jobInfo.getScheduleType(), jobInfo.getScheduleConf());
         }
     }
 
-    private void pushTimeRing(int ringSecond, int jobId){
+    private void pushTimeRing(int ringSecond, int jobId, String triggerTimeZoneId){
         // push async ring
-        List<Integer> ringItemData = ringData.get(ringSecond);
+
+        Map<Integer, String> ringItemDataPair = new HashMap<>();
+        ringItemDataPair.put(jobId, triggerTimeZoneId);
+        List<Map<Integer, String>> ringItemData = ringData.get(ringSecond);
         if (ringItemData == null) {
-            ringItemData = new ArrayList<Integer>();
+            ringItemData = new ArrayList<>();
             ringData.put(ringSecond, ringItemData);
         }
-        ringItemData.add(jobId);
+        ringItemData.add(ringItemDataPair);
 
         logger.debug(">>>>>>>>>>> xxl-job, schedule push time-ring : " + ringSecond + " = " + Arrays.asList(ringItemData) );
     }
@@ -319,7 +327,7 @@ public class JobScheduleHelper {
         boolean hasRingData = false;
         if (!ringData.isEmpty()) {
             for (int second : ringData.keySet()) {
-                List<Integer> tmpData = ringData.get(second);
+                List<Map<Integer, String>> tmpData = ringData.get(second);
                 if (tmpData!=null && tmpData.size()>0) {
                     hasRingData = true;
                     break;
@@ -356,19 +364,40 @@ public class JobScheduleHelper {
 
 
     // ---------------------- tools ----------------------
-    public static Date generateNextValidTime(XxlJobInfo jobInfo, Date fromTime) throws Exception {
+    public static NextValidTimeInfo generateNextValidTime(XxlJobInfo jobInfo, Date fromTime) throws Exception {
         ScheduleTypeEnum scheduleTypeEnum = ScheduleTypeEnum.match(jobInfo.getScheduleType(), null);
         if (ScheduleTypeEnum.CRON == scheduleTypeEnum) {
             CronExpression cronExpression = new CronExpression(jobInfo.getScheduleConf());
-            if(Strings.isNotBlank(jobInfo.getTimeZoneId())){
-                cronExpression.setTimeZone(TimeZone.getTimeZone(jobInfo.getTimeZoneId()));
+            NextValidTimeInfo nextValidTimeInfo = new NextValidTimeInfo();
+            if(Strings.isNotBlank(jobInfo.getScheduleTimeZoneId())){
+
+                return getNextValidTimeInfoWithZoneId(jobInfo, fromTime, cronExpression, nextValidTimeInfo);
             }
 
-            return cronExpression.getNextValidTimeAfter(fromTime);
+            nextValidTimeInfo.setNextValidTime(cronExpression.getNextValidTimeAfter(fromTime));
+            return nextValidTimeInfo;
         } else if (ScheduleTypeEnum.FIX_RATE == scheduleTypeEnum /*|| ScheduleTypeEnum.FIX_DELAY == scheduleTypeEnum*/) {
-            return new Date(fromTime.getTime() + Integer.valueOf(jobInfo.getScheduleConf())*1000 );
+            NextValidTimeInfo nextValidTimeInfo = new NextValidTimeInfo();
+            nextValidTimeInfo.setNextValidTime(new Date(fromTime.getTime() + Integer.valueOf(jobInfo.getScheduleConf())*1000 ));
+            return nextValidTimeInfo;
         }
         return null;
+    }
+
+    private static NextValidTimeInfo getNextValidTimeInfoWithZoneId(XxlJobInfo jobInfo, Date fromTime, CronExpression cronExpression, NextValidTimeInfo nextValidTimeInfo) {
+        List<String> zoneIdList = Arrays.asList(jobInfo.getScheduleTimeZoneId().split(","));
+        for(String zoneId : zoneIdList){
+            cronExpression.setTimeZone(TimeZone.getTimeZone(zoneId));
+            Date nextValidTime = cronExpression.getNextValidTimeAfter(fromTime);
+            if(Objects.isNull(nextValidTimeInfo.getNextValidTime()) || nextValidTime.before(nextValidTimeInfo.getNextValidTime())){
+                nextValidTimeInfo.setNextValidTime(nextValidTime);
+                nextValidTimeInfo.setNextValidTimeZoneId(zoneId);
+            }else if(nextValidTime.equals(nextValidTimeInfo.getNextValidTime())){
+                nextValidTimeInfo.setNextValidTimeZoneId(nextValidTimeInfo.getNextValidTimeZoneId() + ","+zoneId);
+            }
+        }
+
+        return nextValidTimeInfo;
     }
 
 }

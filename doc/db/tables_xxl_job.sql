@@ -7,6 +7,7 @@ use `xxl_job`;
 
 SET NAMES utf8mb4;
 
+
 CREATE TABLE `xxl_job_info` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `job_group` int(11) NOT NULL COMMENT '执行器主键ID',
@@ -17,6 +18,7 @@ CREATE TABLE `xxl_job_info` (
   `alarm_email` varchar(255) DEFAULT NULL COMMENT '报警邮件',
   `schedule_type` varchar(50) NOT NULL DEFAULT 'NONE' COMMENT '调度类型',
   `schedule_conf` varchar(128) DEFAULT NULL COMMENT '调度配置，值含义取决于调度类型',
+  `schedule_time_zone_id` varchar(512) DEFAULT NULL COMMENT '时区id，例如：Asia/Shanghai。多个时区id用 , 隔开',
   `misfire_strategy` varchar(50) NOT NULL DEFAULT 'DO_NOTHING' COMMENT '调度过期策略',
   `executor_route_strategy` varchar(50) DEFAULT NULL COMMENT '执行器路由策略',
   `executor_handler` varchar(255) DEFAULT NULL COMMENT '执行器任务handler',
@@ -32,7 +34,7 @@ CREATE TABLE `xxl_job_info` (
   `trigger_status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '调度状态：0-停止，1-运行',
   `trigger_last_time` bigint(13) NOT NULL DEFAULT '0' COMMENT '上次调度时间',
   `trigger_next_time` bigint(13) NOT NULL DEFAULT '0' COMMENT '下次调度时间',
-  `time_zone_id` varchar(50) DEFAULT NULL COMMENT '时区id，例如：Asia/Shanghai',
+  `trigger_next_time_zone_id` varchar(512) DEFAULT NULL COMMENT '下次调度时区id，例如：Asia/Shanghai。多个时区id用 , 隔开',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -46,6 +48,7 @@ CREATE TABLE `xxl_job_log` (
   `executor_sharding_param` varchar(20) DEFAULT NULL COMMENT '执行器任务分片参数，格式如 1/2',
   `executor_fail_retry_count` int(11) NOT NULL DEFAULT '0' COMMENT '失败重试次数',
   `trigger_time` datetime DEFAULT NULL COMMENT '调度-时间',
+  `trigger_time_zone_id` varchar(512) DEFAULT NULL COMMENT '调度时区id，例如：Asia/Shanghai。多个时区id用 , 隔开',
   `trigger_code` int(11) NOT NULL COMMENT '调度-结果',
   `trigger_msg` text COMMENT '调度-日志',
   `handle_time` datetime DEFAULT NULL COMMENT '执行-时间',
@@ -109,6 +112,13 @@ CREATE TABLE `xxl_job_user` (
   UNIQUE KEY `i_username` (`username`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `xxl_job_time_zone` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `zone_id` varchar(50) NOT NULL COMMENT '时区id',
+  `name` varchar(50) NOT NULL COMMENT '时区名称',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `xxl_job_lock` (
   `lock_name` varchar(50) NOT NULL COMMENT '锁名称',
   PRIMARY KEY (`lock_name`)
@@ -118,6 +128,6 @@ INSERT INTO `xxl_job_group`(`id`, `app_name`, `title`, `address_type`, `address_
 INSERT INTO `xxl_job_info`(`id`, `job_group`, `job_desc`, `add_time`, `update_time`, `author`, `alarm_email`, `schedule_type`, `schedule_conf`, `misfire_strategy`, `executor_route_strategy`, `executor_handler`, `executor_param`, `executor_block_strategy`, `executor_timeout`, `executor_fail_retry_count`, `glue_type`, `glue_source`, `glue_remark`, `glue_updatetime`, `child_jobid`) VALUES (1, 1, '测试任务1', '2018-11-03 22:21:31', '2018-11-03 22:21:31', 'XXL', '', 'CRON', '0 0 0 * * ? *', 'DO_NOTHING', 'FIRST', 'demoJobHandler', '', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'GLUE代码初始化', '2018-11-03 22:21:31', '');
 INSERT INTO `xxl_job_user`(`id`, `username`, `password`, `role`, `permission`) VALUES (1, 'admin', 'e10adc3949ba59abbe56e057f20f883e', 1, NULL);
 INSERT INTO `xxl_job_lock` ( `lock_name`) VALUES ( 'schedule_lock');
-
+INSERT INTO `xxl_job_time_zone` (`id`, `zone_id`, `name`) VALUES(1, 'Asia/Jakarta', '雅加达(UTC+9:00)'),(2, 'Asia/Shanghai', '北京,上海(UTC+8:00)'),(3, 'Asia/Singapore', '新加坡(UTC+08:00)')
 commit;
 

@@ -24,6 +24,7 @@ public class TriggerParam implements Serializable{
 
     private int broadcastIndex;
     private int broadcastTotal;
+    private String triggerTimeZoneId;
 
 
     public int getJobId() {
@@ -122,6 +123,13 @@ public class TriggerParam implements Serializable{
         this.broadcastTotal = broadcastTotal;
     }
 
+    public String getTriggerTimeZoneId() {
+        return triggerTimeZoneId;
+    }
+
+    public void setTriggerTimeZoneId(String triggerTimeZoneId) {
+        this.triggerTimeZoneId = triggerTimeZoneId;
+    }
 
     @Override
     public String toString() {
@@ -138,6 +146,7 @@ public class TriggerParam implements Serializable{
                 ", glueUpdatetime=" + glueUpdatetime +
                 ", broadcastIndex=" + broadcastIndex +
                 ", broadcastTotal=" + broadcastTotal +
+                ", triggerTimeZoneId" + triggerTimeZoneId +
                 '}';
     }
 

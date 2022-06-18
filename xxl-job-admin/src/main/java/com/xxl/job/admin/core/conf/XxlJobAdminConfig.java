@@ -67,8 +67,6 @@ public class XxlJobAdminConfig implements InitializingBean, DisposableBean {
     @Value("${xxl.job.logretentiondays}")
     private int logretentiondays;
 
-    @Value("${timezone.options}")
-    private String timeZoneOptions;
     // dao, service
 
     @Resource
@@ -123,10 +121,6 @@ public class XxlJobAdminConfig implements InitializingBean, DisposableBean {
             return -1;  // Limit greater than or equal to 7, otherwise close
         }
         return logretentiondays;
-    }
-
-    public String getTimeZoneOptions(){
-        return timeZoneOptions;
     }
 
     public XxlJobLogDao getXxlJobLogDao() {

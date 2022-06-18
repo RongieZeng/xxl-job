@@ -1,5 +1,11 @@
 package com.xxl.job.core.context;
 
+import io.netty.util.internal.StringUtil;
+import org.springframework.util.StringUtils;
+
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * xxl-job context
  *
@@ -60,8 +66,13 @@ public class XxlJobContext {
      */
     private String handleMsg;
 
+    /**
+     * 触发任务的时区id列表，为空则默认东8区
+     */
+    private List<String> triggerZoneIdList;
 
-    public XxlJobContext(long jobId, String jobParam, String jobLogFileName, int shardIndex, int shardTotal) {
+
+    public XxlJobContext(long jobId, String jobParam, String jobLogFileName, int shardIndex, int shardTotal, String triggerTimeZoneId) {
         this.jobId = jobId;
         this.jobParam = jobParam;
         this.jobLogFileName = jobLogFileName;
@@ -69,6 +80,9 @@ public class XxlJobContext {
         this.shardTotal = shardTotal;
 
         this.handleCode = HANDLE_CODE_SUCCESS;  // default success
+        if(!StringUtil.isNullOrEmpty(triggerTimeZoneId)){
+            this.triggerZoneIdList = Arrays.asList(triggerTimeZoneId.split(","));
+        }
     }
 
     public long getJobId() {
@@ -107,7 +121,12 @@ public class XxlJobContext {
         return handleMsg;
     }
 
-    // ---------------------- tool ----------------------
+    public List<String> getTriggerZoneIdList() {
+        return triggerZoneIdList;
+    }
+
+
+// ---------------------- tool ----------------------
 
     private static InheritableThreadLocal<XxlJobContext> contextHolder = new InheritableThreadLocal<XxlJobContext>(); // support for child thread of job handler)
 

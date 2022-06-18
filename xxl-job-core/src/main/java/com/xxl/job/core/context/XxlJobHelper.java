@@ -10,6 +10,7 @@ import org.slf4j.helpers.MessageFormatter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.List;
 
 /**
  * helper for xxl-job
@@ -46,6 +47,20 @@ public class XxlJobHelper {
         }
 
         return xxlJobContext.getJobParam();
+    }
+
+    /**
+     * current Time Zone Id List
+     *
+     * @return
+     */
+    public static List<String> getTriggerZoneIdList() {
+        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
+        if (xxlJobContext == null) {
+            return null;
+        }
+
+        return xxlJobContext.getTriggerZoneIdList();
     }
 
     // ---------------------- for log ----------------------

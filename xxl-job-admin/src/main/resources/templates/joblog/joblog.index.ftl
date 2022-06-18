@@ -92,6 +92,7 @@
 										<th name="glueType" >运行模式</th>
                                       	<th name="executorParam" >任务参数</th>-->
                                         <th name="triggerTime" >${I18n.joblog_field_triggerTime}</th>
+                                        <th name="triggerTimeZoneId" >${I18n.joblog_field_triggerTimeZoneId}</th>
                                         <th name="triggerCode" >${I18n.joblog_field_triggerCode}</th>
                                         <th name="triggerMsg" >${I18n.joblog_field_triggerMsg}</th>
 					                  	<th name="handleTime" >${I18n.joblog_field_handleTime}</th>

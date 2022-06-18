@@ -23,6 +23,7 @@ public class XxlJobLog {
 	
 	// trigger info
 	private Date triggerTime;
+	private String triggerTimeZoneId;
 	private int triggerCode;
 	private String triggerMsg;
 	
@@ -154,4 +155,11 @@ public class XxlJobLog {
 		this.alarmStatus = alarmStatus;
 	}
 
+	public String getTriggerTimeZoneId() {
+		return triggerTimeZoneId;
+	}
+
+	public void setTriggerTimeZoneId(String triggerTimeZoneId) {
+		this.triggerTimeZoneId = triggerTimeZoneId;
+	}
 }

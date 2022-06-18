@@ -114,11 +114,18 @@ $(function() {
 					{ "data": 'jobGroup', "visible" : false},
 					{
 						"data": 'triggerTime',
-                        "width":'20%',
+                        "width":'10%',
 						"render": function ( data, type, row ) {
 							return data?moment(data).format("YYYY-MM-DD HH:mm:ss"):"";
 						}
 					},
+					{
+                        "data": 'triggerTimeZoneId',
+                        "width":'10%',
+                        "render": function ( data, type, row ) {
+                            return row.triggerTimeZoneId;
+                        }
+                    },
 					{
 						"data": 'triggerCode',
                         "width":'10%',

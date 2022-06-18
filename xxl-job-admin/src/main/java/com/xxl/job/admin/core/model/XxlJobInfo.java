@@ -22,6 +22,7 @@ public class XxlJobInfo {
 
 	private String scheduleType;			// 调度类型
 	private String scheduleConf;			// 调度配置，值含义取决于调度类型
+	private String scheduleTimeZoneId; 		// 调度时区Id
 	private String misfireStrategy;			// 调度过期策略
 
 	private String executorRouteStrategy;	// 执行器路由策略
@@ -41,8 +42,8 @@ public class XxlJobInfo {
 	private int triggerStatus;		// 调度状态：0-停止，1-运行
 	private long triggerLastTime;	// 上次调度时间
 	private long triggerNextTime;	// 下次调度时间
+	private String triggerNextTimeZoneId; 	// 下次调度时区id
 
-	private String timeZoneId; // 时区Id
 
 
 	public int getId() {
@@ -237,11 +238,19 @@ public class XxlJobInfo {
 		this.triggerNextTime = triggerNextTime;
 	}
 
-	public String getTimeZoneId() {
-		return timeZoneId;
+	public String getScheduleTimeZoneId() {
+		return scheduleTimeZoneId;
 	}
 
-	public void setTimeZoneId(String timeZoneId) {
-		this.timeZoneId = timeZoneId;
+	public void setScheduleTimeZoneId(String scheduleTimeZoneId) {
+		this.scheduleTimeZoneId = scheduleTimeZoneId;
+	}
+
+	public String getTriggerNextTimeZoneId() {
+		return triggerNextTimeZoneId;
+	}
+
+	public void setTriggerNextTimeZoneId(String triggerNextTimeZoneId) {
+		this.triggerNextTimeZoneId = triggerNextTimeZoneId;
 	}
 }

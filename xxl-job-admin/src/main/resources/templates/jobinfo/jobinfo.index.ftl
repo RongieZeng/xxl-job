@@ -166,13 +166,13 @@
                     </div>
                     <div class="form-group">
                         <label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_timeZoneId}</label>
-                        <div class="col-sm-4">
-                            <select class="form-control" name="timeZoneId" >
+                        <div class="col-sm-10">
                                 <#list TimeZoneOptionList as timeZoneOption>
-                                    <option value="${timeZoneOption.zoneId}" >${timeZoneOption.name}</option>
+                                    <input type="checkbox" name="timeZoneId" value="${timeZoneOption.zoneId}" >${timeZoneOption.name}
+                                    &nbsp;&nbsp;&nbsp;&nbsp;
                                 </#list>
-                            </select>
                         </div>
+                        <div><input type="text" name="scheduleTimeZoneId" hidden></div>
                     </div>
                     <br>
                     <p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">${I18n.jobinfo_conf_job}</p>    <#-- 任务配置 -->
@@ -420,13 +420,13 @@ exit 0
                     </div>
                     <div class="form-group">
                         <label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_timeZoneId}</label>
-                        <div class="col-sm-4">
-                            <select class="form-control" name="timeZoneId" >
+                        <div class="col-sm-10">
                                 <#list TimeZoneOptionList as timeZoneOption>
-                                    <option value="${timeZoneOption.zoneId}" >${timeZoneOption.name}</option>
+                                    <input type="checkbox" name="timeZoneId" value="${timeZoneOption.zoneId}" >${timeZoneOption.name}
+                                    &nbsp;&nbsp;&nbsp;&nbsp;
                                 </#list>
-                            </select>
                         </div>
+                        <div><input type="text" name="scheduleTimeZoneId" hidden></div>
                     </div>
                     <br>
                     <p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">${I18n.jobinfo_conf_job}</p>    <#-- 任务配置 -->

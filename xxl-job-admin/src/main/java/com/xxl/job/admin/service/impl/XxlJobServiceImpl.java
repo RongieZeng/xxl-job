@@ -1,5 +1,6 @@
 package com.xxl.job.admin.service.impl;
 
+import com.xxl.job.admin.core.conf.model.NextValidTimeInfo;
 import com.xxl.job.admin.core.cron.CronExpression;
 import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobInfo;
@@ -253,11 +254,11 @@ public class XxlJobServiceImpl implements XxlJobService {
 		boolean scheduleDataNotChanged = jobInfo.getScheduleType().equals(exists_jobInfo.getScheduleType()) && jobInfo.getScheduleConf().equals(exists_jobInfo.getScheduleConf());
 		if (exists_jobInfo.getTriggerStatus() == 1 && !scheduleDataNotChanged) {
 			try {
-				Date nextValidTime = JobScheduleHelper.generateNextValidTime(jobInfo, new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
-				if (nextValidTime == null) {
+				NextValidTimeInfo nextValidTimeInfo = JobScheduleHelper.generateNextValidTime(jobInfo, new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
+				if (Objects.isNull(nextValidTimeInfo) || Objects.isNull(nextValidTimeInfo.getNextValidTime())) {
 					return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
 				}
-				nextTriggerTime = nextValidTime.getTime();
+				nextTriggerTime = nextValidTimeInfo.getNextValidTime().getTime();
 			} catch (Exception e) {
 				logger.error(e.getMessage(), e);
 				return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
@@ -278,7 +279,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 		exists_jobInfo.setExecutorTimeout(jobInfo.getExecutorTimeout());
 		exists_jobInfo.setExecutorFailRetryCount(jobInfo.getExecutorFailRetryCount());
 		exists_jobInfo.setChildJobId(jobInfo.getChildJobId());
-		exists_jobInfo.setTimeZoneId(jobInfo.getTimeZoneId());
+		exists_jobInfo.setScheduleTimeZoneId(jobInfo.getScheduleTimeZoneId());
 		exists_jobInfo.setTriggerNextTime(nextTriggerTime);
 
 		exists_jobInfo.setUpdateTime(new Date());
@@ -312,13 +313,13 @@ public class XxlJobServiceImpl implements XxlJobService {
 		}
 
 		// next trigger time (5s后生效，避开预读周期)
+		NextValidTimeInfo nextValidTimeInfo;
 		long nextTriggerTime = 0;
 		try {
-			Date nextValidTime = JobScheduleHelper.generateNextValidTime(xxlJobInfo, new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
-			if (nextValidTime == null) {
+			nextValidTimeInfo = JobScheduleHelper.generateNextValidTime(xxlJobInfo, new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
+			if (Objects.isNull(nextValidTimeInfo) || Objects.isNull(nextValidTimeInfo.getNextValidTime())) {
 				return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
 			}
-			nextTriggerTime = nextValidTime.getTime();
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
@@ -326,7 +327,8 @@ public class XxlJobServiceImpl implements XxlJobService {
 
 		xxlJobInfo.setTriggerStatus(1);
 		xxlJobInfo.setTriggerLastTime(0);
-		xxlJobInfo.setTriggerNextTime(nextTriggerTime);
+		xxlJobInfo.setTriggerNextTime(nextValidTimeInfo.getNextValidTime().getTime());
+		xxlJobInfo.setTriggerNextTimeZoneId(nextValidTimeInfo.getNextValidTimeZoneId());
 
 		xxlJobInfo.setUpdateTime(new Date());
 		xxlJobInfoDao.update(xxlJobInfo);
@@ -340,6 +342,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 		xxlJobInfo.setTriggerStatus(0);
 		xxlJobInfo.setTriggerLastTime(0);
 		xxlJobInfo.setTriggerNextTime(0);
+		xxlJobInfo.setTriggerNextTimeZoneId(null);
 
 		xxlJobInfo.setUpdateTime(new Date());
 		xxlJobInfoDao.update(xxlJobInfo);

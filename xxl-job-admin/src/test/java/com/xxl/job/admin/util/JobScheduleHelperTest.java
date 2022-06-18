@@ -1,5 +1,6 @@
 package com.xxl.job.admin.util;
 
+import com.xxl.job.admin.core.conf.model.NextValidTimeInfo;
 import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.scheduler.ScheduleTypeEnum;
 import com.xxl.job.admin.core.thread.JobScheduleHelper;
@@ -11,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * JobScheduleHelper test
@@ -29,11 +31,29 @@ public class JobScheduleHelperTest {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date fromDate = df.parse("2022-06-12 17:00:00");
 
-        Date nextValidTime = JobScheduleHelper.generateNextValidTime(xxlJobInfo, fromDate);
-        assertEquals(df.parse("2022-06-13 01:05:00"), nextValidTime);
+        NextValidTimeInfo nextValidTimeInfo;
+        nextValidTimeInfo = JobScheduleHelper.generateNextValidTime(xxlJobInfo, fromDate);
+        assertNotNull(nextValidTimeInfo);
+        assertEquals(df.parse("2022-06-13 01:05:00"), nextValidTimeInfo.getNextValidTime());
 
-        xxlJobInfo.setTimeZoneId("Asia/Jakarta");
-        nextValidTime = JobScheduleHelper.generateNextValidTime(xxlJobInfo, fromDate);
-        assertEquals(df.parse("2022-06-13 02:05:00"), nextValidTime);
+        xxlJobInfo.setScheduleTimeZoneId("Asia/Jakarta");
+        nextValidTimeInfo = JobScheduleHelper.generateNextValidTime(xxlJobInfo, fromDate);
+        assertNotNull(nextValidTimeInfo);
+        assertEquals(df.parse("2022-06-13 02:05:00"), nextValidTimeInfo.getNextValidTime());
+        assertEquals("Asia/Jakarta", nextValidTimeInfo.getNextValidTimeZoneId());
+
+        // 多时区，且不存在与世界时差距一样的时区
+        xxlJobInfo.setScheduleTimeZoneId("Asia/Jakarta,Asia/Shanghai");
+        nextValidTimeInfo = JobScheduleHelper.generateNextValidTime(xxlJobInfo, fromDate);
+        assertNotNull(nextValidTimeInfo);
+        assertEquals(df.parse("2022-06-13 01:05:00"), nextValidTimeInfo.getNextValidTime());
+        assertEquals("Asia/Shanghai", nextValidTimeInfo.getNextValidTimeZoneId());
+
+        // 多时区，且存在两个与世界时差距一样的时区
+        xxlJobInfo.setScheduleTimeZoneId("Asia/Jakarta,Asia/Shanghai,Asia/Singapore");
+        nextValidTimeInfo = JobScheduleHelper.generateNextValidTime(xxlJobInfo, fromDate);
+        assertNotNull(nextValidTimeInfo);
+        assertEquals(df.parse("2022-06-13 01:05:00"), nextValidTimeInfo.getNextValidTime());
+        assertEquals("Asia/Shanghai,Asia/Singapore", nextValidTimeInfo.getNextValidTimeZoneId());
     }
 }

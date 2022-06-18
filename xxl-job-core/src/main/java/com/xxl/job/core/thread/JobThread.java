@@ -124,7 +124,8 @@ public class JobThread extends Thread{
 							triggerParam.getExecutorParams(),
 							logFileName,
 							triggerParam.getBroadcastIndex(),
-							triggerParam.getBroadcastTotal());
+							triggerParam.getBroadcastTotal(),
+							triggerParam.getTriggerTimeZoneId());
 
 					// init job context
 					XxlJobContext.setXxlJobContext(xxlJobContext);

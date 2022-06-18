@@ -341,7 +341,7 @@ $(function() {
             data : {
                 "scheduleType" : row.scheduleType,
 				"scheduleConf" : row.scheduleConf,
-				"timeZoneId" : row.timeZoneId
+				"scheduleTimeZoneId" : row.scheduleTimeZoneId
             },
             dataType : "json",
             success : function(data){
@@ -456,6 +456,21 @@ $(function() {
 				scheduleConf = $("#addModal .form input[name='schedule_conf_FIX_DELAY']").val();
 			}
 			$("#addModal .form input[name='scheduleConf']").val( scheduleConf );
+            // process schedule_time_zone_id
+            var scheduleTimeZoneId=null;
+            for(var j=0;j<timeZoneIdCheckbox.length;j++){
+                if(timeZoneIdCheckbox[j].checked==true){
+                    if(scheduleTimeZoneId == null){
+                        scheduleTimeZoneId = timeZoneIdCheckbox[j].value;
+                    }else{
+                        scheduleTimeZoneId = scheduleTimeZoneId + ',' + timeZoneIdCheckbox[j].value ;
+                    }
+                }
+            }
+
+            if(scheduleTimeZoneId!=null){
+                $("#updateModal .form input[name='scheduleTimeZoneId']").val(scheduleTimeZoneId);
+            }
 
         	$.post(base_url + "/jobinfo/add",  $("#addModal .form").serialize(), function(data, status) {
     			if (data.code == "200") {
@@ -554,7 +569,20 @@ $(function() {
 		} else if (row.scheduleType == 'FIX_DELAY') {
 			$("#updateModal .form input[name='schedule_conf_FIX_DELAY']").val( row.scheduleConf );
 		}
-		$('#updateModal .form select[name=timeZoneId] option[value="'+ row.timeZoneId +'"]').prop('selected', true);
+		if(row.scheduleTimeZoneId!='' && row.scheduleTimeZoneId!=null){
+		    var timeZoneIdList = row.scheduleTimeZoneId.split(',')
+		    for(var i=0;i<timeZoneIdList.length;i++){
+		        var timeZoneIdCheckbox = $("#updateModal .form input[name='timeZoneId']")
+		        timeZoneId = timeZoneIdList[i];
+                for(var j=0;j<timeZoneIdCheckbox.length;j++){
+                    if(timeZoneIdCheckbox[j].value==timeZoneId){
+                        timeZoneIdCheckbox[j].checked = true;
+                    }
+                }
+		    }
+
+		    $("#updateModal .form input[name='scheduleTimeZoneId']").val(row.scheduleTimeZoneId)
+		}
 
 		// 》init scheduleType
 		$("#updateModal .form select[name=scheduleType]").change();
@@ -640,6 +668,20 @@ $(function() {
 				scheduleConf = $("#updateModal .form input[name='schedule_conf_FIX_DELAY']").val();
 			}
 			$("#updateModal .form input[name='scheduleConf']").val( scheduleConf );
+            // process schedule_time_zone_id
+            var timeZoneIdCheckbox = $("#updateModal .form input[name='timeZoneId']");
+            var scheduleTimeZoneId=null;
+            for(var j=0;j<timeZoneIdCheckbox.length;j++){
+                if(timeZoneIdCheckbox[j].checked==true){
+                    if(scheduleTimeZoneId == null){
+                        scheduleTimeZoneId = timeZoneIdCheckbox[j].value;
+                    }else{
+                        scheduleTimeZoneId = scheduleTimeZoneId + ',' + timeZoneIdCheckbox[j].value ;
+                    }
+                }
+            }
+
+            $("#updateModal .form input[name='scheduleTimeZoneId']").val(scheduleTimeZoneId);
 
 			// post
     		$.post(base_url + "/jobinfo/update", $("#updateModal .form").serialize(), function(data, status) {

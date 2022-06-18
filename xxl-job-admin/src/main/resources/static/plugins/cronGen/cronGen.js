@@ -2,6 +2,7 @@
     // var resultsName = "";
     var inputElement;
     var displayElement;
+    var scheduleTimeZoneIdElement;
     $.fn.extend({
         cronGen: function (options) {
             if (options == null) {
@@ -637,6 +638,7 @@
     };
 
     var refreshRunTime = function () {
+
         $.ajax({
             type : 'GET',
             url : base_url + "/jobinfo/nextTriggerTime",

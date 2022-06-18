@@ -1,10 +1,10 @@
 package com.xxl.job.admin.controller;
 
-import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
-import com.xxl.job.admin.core.conf.model.TimeZoneOption;
+import com.xxl.job.admin.core.conf.model.NextValidTimeInfo;
 import com.xxl.job.admin.core.exception.XxlJobException;
 import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobInfo;
+import com.xxl.job.admin.core.model.XxlJobTimeZone;
 import com.xxl.job.admin.core.model.XxlJobUser;
 import com.xxl.job.admin.core.route.ExecutorRouteStrategyEnum;
 import com.xxl.job.admin.core.scheduler.MisfireStrategyEnum;
@@ -14,13 +14,13 @@ import com.xxl.job.admin.core.thread.JobTriggerPoolHelper;
 import com.xxl.job.admin.core.trigger.TriggerTypeEnum;
 import com.xxl.job.admin.core.util.I18nUtil;
 import com.xxl.job.admin.dao.XxlJobGroupDao;
+import com.xxl.job.admin.dao.XxlJobTimeZoneDao;
 import com.xxl.job.admin.service.LoginService;
 import com.xxl.job.admin.service.XxlJobService;
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.enums.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.job.core.util.DateUtil;
-import com.xxl.job.core.util.GsonTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -47,6 +47,8 @@ public class JobInfoController {
     @Resource
     private XxlJobGroupDao xxlJobGroupDao;
     @Resource
+    private XxlJobTimeZoneDao xxlJobTimeZoneDao;
+    @Resource
     private XxlJobService xxlJobService;
 
     @RequestMapping
@@ -60,7 +62,7 @@ public class JobInfoController {
         model.addAttribute("MisfireStrategyEnum", MisfireStrategyEnum.values());                    // 调度过期策略
 
         // 时区配置
-        List<TimeZoneOption> timeZoneOptionList = GsonTool.fromJsonList(XxlJobAdminConfig.getAdminConfig().getTimeZoneOptions(), TimeZoneOption.class);
+        List<XxlJobTimeZone> timeZoneOptionList = xxlJobTimeZoneDao.findAll();
         model.addAttribute("TimeZoneOptionList", CollectionUtils.isEmpty(timeZoneOptionList) ? Collections.EMPTY_LIST : timeZoneOptionList);
 
         // 执行器列表
@@ -154,25 +156,26 @@ public class JobInfoController {
             executorParam = "";
         }
 
-        JobTriggerPoolHelper.trigger(id, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList);
+        JobTriggerPoolHelper.trigger(id, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList, null);
         return ReturnT.SUCCESS;
     }
 
     @RequestMapping("/nextTriggerTime")
     @ResponseBody
-    public ReturnT<List<String>> nextTriggerTime(String scheduleType, String scheduleConf, String timeZoneId) {
+    public ReturnT<List<String>> nextTriggerTime(String scheduleType, String scheduleConf, String scheduleTimeZoneId) {
 
         XxlJobInfo paramXxlJobInfo = new XxlJobInfo();
         paramXxlJobInfo.setScheduleType(scheduleType);
         paramXxlJobInfo.setScheduleConf(scheduleConf);
-        paramXxlJobInfo.setTimeZoneId(timeZoneId);
+        paramXxlJobInfo.setScheduleTimeZoneId(scheduleTimeZoneId);
 
         List<String> result = new ArrayList<>();
         try {
             Date lastTime = new Date();
             for (int i = 0; i < 5; i++) {
-                lastTime = JobScheduleHelper.generateNextValidTime(paramXxlJobInfo, lastTime);
-                if (lastTime != null) {
+                NextValidTimeInfo nextValidTimeInfo = JobScheduleHelper.generateNextValidTime(paramXxlJobInfo, lastTime);
+                if (Objects.nonNull(nextValidTimeInfo) && Objects.nonNull(nextValidTimeInfo.getNextValidTime())) {
+                    lastTime = nextValidTimeInfo.getNextValidTime();
                     result.add(DateUtil.formatDateTime(lastTime));
                 } else {
                     break;
