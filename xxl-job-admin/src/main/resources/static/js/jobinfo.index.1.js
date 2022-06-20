@@ -457,6 +457,7 @@ $(function() {
 			}
 			$("#addModal .form input[name='scheduleConf']").val( scheduleConf );
             // process schedule_time_zone_id
+            var timeZoneIdCheckbox = $("#addModal .form input[name='timeZoneId']");
             var scheduleTimeZoneId=null;
             for(var j=0;j<timeZoneIdCheckbox.length;j++){
                 if(timeZoneIdCheckbox[j].checked==true){
@@ -469,7 +470,7 @@ $(function() {
             }
 
             if(scheduleTimeZoneId!=null){
-                $("#updateModal .form input[name='scheduleTimeZoneId']").val(scheduleTimeZoneId);
+                $("#addModal .form input[name='scheduleTimeZoneId']").val(scheduleTimeZoneId);
             }
 
         	$.post(base_url + "/jobinfo/add",  $("#addModal .form").serialize(), function(data, status) {
